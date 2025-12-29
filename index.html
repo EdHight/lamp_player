@@ -786,10 +786,58 @@
                 }
             });
 
-            // Инициализация
-            initPlaylist();
-            playTrack(0);
-            audioPlayer.volume = 0.7;
+         // Функция инициализации с автоплеем
+function initializePlayerWithAutoplay() {
+    initPlaylist();
+    
+    // Пытаемся запустить сразу
+    const playPromise = audioPlayer.play();
+    
+    if (playPromise !== undefined) {
+        playPromise.then(() => {
+            console.log('Autoplay успешен');
+            isPlaying = true;
+            updatePlayPauseButton();
+            updateNFCPrompt();
+        }).catch(error => {
+            console.log('Autoplay заблокирован, ждем жеста пользователя');
+            // Ждем жеста пользователя
+            waitForUserGesture();
+        });
+    }
+    
+    audioPlayer.volume = 0.7;
+}
+
+// Ждем жеста пользователя
+function waitForUserGesture() {
+    const gestureHandler = () => {
+        if (!isPlaying && audioPlayer.src) {
+            audioPlayer.play().then(() => {
+                isPlaying = true;
+                updatePlayPauseButton();
+                updateNFCPrompt();
+            });
+        }
+        
+        // Убираем обработчики после первого жеста
+        document.removeEventListener('click', gestureHandler);
+        document.removeEventListener('touchstart', gestureHandler);
+        document.removeEventListener('keydown', gestureHandler);
+    };
+    
+    // Вешаем на все возможные жесты
+    document.addEventListener('click', gestureHandler);
+    document.addEventListener('touchstart', gestureHandler);
+    document.addEventListener('keydown', gestureHandler);
+    
+    // Также вешаем на NFC промпт отдельно
+    document.getElementById('nfcPrompt').addEventListener('click', gestureHandler, { once: true });
+}
+
+// Запускаем инициализацию
+initializePlayerWithAutoplay();
+            
 
             console.log("LOFT AUDIO Player initialized");
         });
