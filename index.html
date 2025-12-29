@@ -42,7 +42,6 @@
             backdrop-filter: blur(10px);
         }
 
-        /* Текстура бетона - более тонкая */
         .concrete-texture {
             position: absolute;
             top: 0;
@@ -83,46 +82,47 @@
             margin-bottom: 20px;
         }
 
-       .nfc-prompt {
-    background: linear-gradient(90deg, #4a4a4a, #555);
-    color: #ffffff;
-    padding: 20px;
-    text-align: center;
-    font-weight: 500;
-    font-size: 1rem;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-}
+        .nfc-prompt {
+            background: linear-gradient(90deg, #4a4a4a, #555);
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            user-select: none;
+        }
 
-.nfc-prompt:hover {
-    background: linear-gradient(90deg, #555, #666);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-}
+        .nfc-prompt:hover {
+            background: linear-gradient(90deg, #555, #666);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
 
-.nfc-prompt:active {
-    transform: translateY(0);
-}
+        .nfc-prompt:active {
+            transform: translateY(0);
+        }
 
-.nfc-prompt i {
-    font-size: 1.2rem;
-    animation: pulse 2s infinite;
-}
+        .nfc-prompt i {
+            font-size: 1.2rem;
+            animation: pulse 2s infinite;
+        }
 
-@keyframes pulse {
-    0% { opacity: 0.7; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.1); }
-    100% { opacity: 0.7; transform: scale(1); }
-}
+        @keyframes pulse {
+            0% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
 
         .player {
             padding: 32px 28px;
@@ -169,17 +169,6 @@
             cursor: pointer;
             overflow: hidden;
             position: relative;
-        }
-
-        .progress-bar::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-            animation: shimmer 3s infinite;
         }
 
         .progress {
@@ -240,10 +229,6 @@
         .control-btn:active {
             transform: translateY(0);
             transition-duration: 0.1s;
-        }
-
-        .control-btn i {
-            opacity: 0.9;
         }
 
         .play-pause {
@@ -368,16 +353,6 @@
             border-left: 2px solid #ffffff;
         }
 
-        .playlist-item.active::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: linear-gradient(to bottom, transparent, #ffffff, transparent);
-        }
-
         .playlist-number {
             font-size: 0.85rem;
             color: #777;
@@ -483,7 +458,6 @@
             }
         }
 
-        /* Анимация загрузки */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -503,7 +477,11 @@
             <div class="subtitle">Concrete Player</div>
         </div>
 
-      
+        <!-- ДОБАВЬТЕ ЭТОТ БЛОК ОБРАТНО -->
+        <div class="nfc-prompt" id="nfcPrompt">
+            <i class="fas fa-hand-pointer"></i>
+            <span id="nfcText">Tap to start playback</span>
+        </div>
 
         <div class="error-message" id="errorMessage"></div>
 
@@ -579,6 +557,8 @@
             const trackArtist = document.getElementById('trackArtist');
             const errorMessage = document.getElementById('errorMessage');
             const playlistCount = document.getElementById('playlistCount');
+            const nfcPrompt = document.getElementById('nfcPrompt');
+            const nfcText = document.getElementById('nfcText');
             
             // Плейлист
             const playlist = [
@@ -610,9 +590,28 @@
             
             let currentTrackIndex = 0;
             let isPlaying = false;
+            let hasUserInteracted = false;
 
-            // Обновить счетчик плейлиста
+            // Инициализация
+            initPlaylist();
+            loadTrack(0); // Загружаем первый трек, но не играем
+            audioPlayer.volume = 0.7;
             playlistCount.textContent = `${playlist.length} tracks`;
+
+            // Обновление текста NFC промпта
+            function updateNFCPrompt() {
+                if (isPlaying) {
+                    nfcText.textContent = "Now Playing";
+                    nfcPrompt.innerHTML = '<i class="fas fa-play-circle"></i><span>Now Playing</span>';
+                    nfcPrompt.style.background = 'linear-gradient(90deg, #3a3a3a, #444)';
+                    nfcPrompt.style.cursor = 'default';
+                } else {
+                    nfcText.textContent = "Tap to play";
+                    nfcPrompt.innerHTML = '<i class="fas fa-hand-pointer"></i><span>Tap to play</span>';
+                    nfcPrompt.style.background = 'linear-gradient(90deg, #4a4a4a, #555)';
+                    nfcPrompt.style.cursor = 'pointer';
+                }
+            }
 
             // Показать/скрыть ошибку
             function showError(message) {
@@ -644,70 +643,66 @@
                         <div class="playlist-duration">${track.duration}</div>
                     `;
                     
-                    item.addEventListener('click', () => playTrack(index));
+                    item.addEventListener('click', () => loadTrack(index));
                     playlistItems.appendChild(item);
                 });
             }
 
-     // Воспроизведение трека с улучшенной логикой
-function playTrack(index) {
-    if (index < 0 || index >= playlist.length) return;
-    
-    hideError();
-    currentTrackIndex = index;
-    const track = playlist[currentTrackIndex];
-    
-    // Останавливаем текущее воспроизведение
-    audioPlayer.pause();
-    
-    // Устанавливаем новый трек
-    audioPlayer.src = track.src;
-    trackTitle.textContent = track.title;
-    trackArtist.textContent = track.artist;
-    
-    // Обновляем активный элемент в плейлисте
-    document.querySelectorAll('.playlist-item').forEach((item, i) => {
-        item.classList.toggle('active', i === currentTrackIndex);
-    });
-    
-    // НЕ пытаемся воспроизвести сразу
-    // Вместо этого показываем кнопку
-    updateNFCPromptForGesture();
-}
+            // Загрузка трека (без воспроизведения)
+            function loadTrack(index) {
+                if (index < 0 || index >= playlist.length) return;
+                
+                hideError();
+                currentTrackIndex = index;
+                const track = playlist[currentTrackIndex];
+                
+                // Останавливаем текущее воспроизведение
+                audioPlayer.pause();
+                isPlaying = false;
+                
+                // Устанавливаем новый трек
+                audioPlayer.src = track.src;
+                trackTitle.textContent = track.title;
+                trackArtist.textContent = track.artist;
+                
+                // Обновляем активный элемент в плейлисте
+                document.querySelectorAll('.playlist-item').forEach((item, i) => {
+                    item.classList.toggle('active', i === currentTrackIndex);
+                });
+                
+                updatePlayPauseButton();
+                updateNFCPrompt();
+            }
 
-// Обновление NFC промпта для жеста
-function updateNFCPromptForGesture() {
-    const nfcPrompt = document.getElementById('nfcPrompt');
-    nfcPrompt.innerHTML = '<i class="fas fa-hand-pointer"></i><span>Tap here to start playback</span>';
-    nfcPrompt.style.background = 'linear-gradient(90deg, #555, #666)';
-    nfcPrompt.style.cursor = 'pointer';
-    nfcPrompt.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.4)';
-    
-    // Вешаем обработчик на промпт
-    const startPlayback = () => {
-        audioPlayer.play().then(() => {
-            isPlaying = true;
-            updatePlayPauseButton();
-            updateNFCPromptPlaying();
-        }).catch(error => {
-            showError("Tap the play button to start");
-        });
-        
-        // Убираем обработчик после первого касания
-        nfcPrompt.removeEventListener('click', startPlayback);
-    };
-    
-    nfcPrompt.addEventListener('click', startPlayback, { once: true });
-}
+            // Воспроизведение трека
+            function playTrack() {
+                if (!audioPlayer.src) {
+                    loadTrack(0);
+                }
+                
+                const playPromise = audioPlayer.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isPlaying = true;
+                        updatePlayPauseButton();
+                        updateNFCPrompt();
+                        console.log('Playback started');
+                    }).catch(error => {
+                        showError("Tap the 'Tap to play' button above to start playback");
+                        isPlaying = false;
+                        updatePlayPauseButton();
+                    });
+                }
+            }
 
-// Обновление NFC промпта при воспроизведении
-function updateNFCPromptPlaying() {
-    const nfcPrompt = document.getElementById('nfcPrompt');
-    nfcPrompt.innerHTML = '<i class="fas fa-play-circle"></i><span>Now Playing</span>';
-    nfcPrompt.style.background = 'linear-gradient(90deg, #3a3a3a, #444)';
-    nfcPrompt.style.cursor = 'default';
-    nfcPrompt.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
-}
+            // Остановка воспроизведения
+            function pauseTrack() {
+                audioPlayer.pause();
+                isPlaying = false;
+                updatePlayPauseButton();
+                updateNFCPrompt();
+            }
 
             // Обновление кнопки воспроизведения
             function updatePlayPauseButton() {
@@ -742,26 +737,26 @@ function updateNFCPromptPlaying() {
             // Обработчики событий
             playPauseBtn.addEventListener('click', () => {
                 if (isPlaying) {
-                    audioPlayer.pause();
-                    isPlaying = false;
+                    pauseTrack();
                 } else {
-                    audioPlayer.play().catch(e => {
-                        showError("Cannot play track. Select a track from playlist.");
-                    });
-                    isPlaying = true;
+                    playTrack();
                 }
-                updatePlayPauseButton();
-                updateNFCPrompt();
             });
 
             prevBtn.addEventListener('click', () => {
-                currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
-                playTrack(currentTrackIndex);
+                const newIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+                loadTrack(newIndex);
+                if (isPlaying) {
+                    setTimeout(() => playTrack(), 100);
+                }
             });
 
             nextBtn.addEventListener('click', () => {
-                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-                playTrack(currentTrackIndex);
+                const newIndex = (currentTrackIndex + 1) % playlist.length;
+                loadTrack(newIndex);
+                if (isPlaying) {
+                    setTimeout(() => playTrack(), 100);
+                }
             });
 
             stopBtn.addEventListener('click', () => {
@@ -771,6 +766,25 @@ function updateNFCPromptPlaying() {
                 updatePlayPauseButton();
                 updateNFCPrompt();
             });
+
+            // NFC промпт - основной способ запуска
+            nfcPrompt.addEventListener('click', function() {
+                if (!isPlaying) {
+                    playTrack();
+                    hasUserInteracted = true;
+                }
+            });
+
+            // Также можно тапнуть по треку для запуска
+            document.addEventListener('click', function initAudio(e) {
+                if (!hasUserInteracted && !isPlaying) {
+                    // Первый клик в любом месте запускает воспроизведение
+                    if (audioPlayer.src) {
+                        playTrack();
+                        hasUserInteracted = true;
+                    }
+                }
+            }, { once: true });
 
             // Прогресс-бар
             document.getElementById('progressBar').addEventListener('click', (e) => {
@@ -791,78 +805,24 @@ function updateNFCPromptPlaying() {
             // События аудио
             audioPlayer.addEventListener('timeupdate', updateProgress);
             audioPlayer.addEventListener('loadedmetadata', updateProgress);
-            audioPlayer.addEventListener('ended', () => nextBtn.click());
-            audioPlayer.addEventListener('error', (e) => {
-                showError(`Audio error: ${audioPlayer.error ? audioPlayer.error.message : 'Unknown error'}`);
-            });
-
-            // NFC промпт
-            document.getElementById('nfcPrompt').addEventListener('click', function() {
-                if (!isPlaying) {
-                    audioPlayer.play().then(() => {
-                        isPlaying = true;
-                        updatePlayPauseButton();
-                        updateNFCPrompt();
-                    }).catch(e => {
-                        showError("Cannot start playback. Select a track from playlist.");
-                    });
+            audioPlayer.addEventListener('ended', () => {
+                const newIndex = (currentTrackIndex + 1) % playlist.length;
+                loadTrack(newIndex);
+                if (isPlaying) {
+                    setTimeout(() => playTrack(), 500);
                 }
             });
-
-         // Функция инициализации с автоплеем
-function initializePlayerWithAutoplay() {
-    initPlaylist();
-    
-    // Пытаемся запустить сразу
-    const playPromise = audioPlayer.play();
-    
-    if (playPromise !== undefined) {
-        playPromise.then(() => {
-            console.log('Autoplay успешен');
-            isPlaying = true;
-            updatePlayPauseButton();
-            updateNFCPrompt();
-        }).catch(error => {
-            console.log('Autoplay заблокирован, ждем жеста пользователя');
-            // Ждем жеста пользователя
-            waitForUserGesture();
-        });
-    }
-    
-    audioPlayer.volume = 0.7;
-}
-
-// Ждем жеста пользователя
-function waitForUserGesture() {
-    const gestureHandler = () => {
-        if (!isPlaying && audioPlayer.src) {
-            audioPlayer.play().then(() => {
-                isPlaying = true;
-                updatePlayPauseButton();
-                updateNFCPrompt();
-            });
-        }
-        
-        // Убираем обработчики после первого жеста
-        document.removeEventListener('click', gestureHandler);
-        document.removeEventListener('touchstart', gestureHandler);
-        document.removeEventListener('keydown', gestureHandler);
-    };
-    
-    // Вешаем на все возможные жесты
-    document.addEventListener('click', gestureHandler);
-    document.addEventListener('touchstart', gestureHandler);
-    document.addEventListener('keydown', gestureHandler);
-    
-    // Также вешаем на NFC промпт отдельно
-    document.getElementById('nfcPrompt').addEventListener('click', gestureHandler, { once: true });
-}
-
-// Запускаем инициализацию
-initializePlayerWithAutoplay();
             
+            audioPlayer.addEventListener('error', (e) => {
+                showError(`Cannot play: ${playlist[currentTrackIndex].title}. File may be missing.`);
+                console.error('Audio error:', audioPlayer.error);
+            });
 
-            console.log("LOFT AUDIO Player initialized");
+            // Инициализация UI
+            updateNFCPrompt();
+            updatePlayPauseButton();
+
+            console.log("LOFT AUDIO Player initialized - Tap the 'Tap to play' button to start");
         });
     </script>
 </body>
