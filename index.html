@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1a1a1a">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LOFT AUDIO | Concrete Player</title>
+    <meta name="theme-color" content="#1a1a1a">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -83,30 +82,30 @@
         }
 
         .nfc-prompt {
-            background: linear-gradient(90deg, #4a4a4a, #555);
+            background: linear-gradient(90deg, #666, #777);
             color: #ffffff;
-            padding: 20px;
+            padding: 24px 20px;
             text-align: center;
-            font-weight: 500;
-            font-size: 1rem;
+            font-weight: 600;
+            font-size: 1.1rem;
             letter-spacing: 0.5px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 2px solid #888;
             position: relative;
             z-index: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
             user-select: none;
         }
 
         .nfc-prompt:hover {
-            background: linear-gradient(90deg, #555, #666);
+            background: linear-gradient(90deg, #777, #888);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.5);
         }
 
         .nfc-prompt:active {
@@ -114,8 +113,8 @@
         }
 
         .nfc-prompt i {
-            font-size: 1.2rem;
-            animation: pulse 2s infinite;
+            font-size: 1.4rem;
+            animation: pulse 1.5s infinite;
         }
 
         @keyframes pulse {
@@ -477,10 +476,9 @@
             <div class="subtitle">Concrete Player</div>
         </div>
 
-        <!-- ДОБАВЬТЕ ЭТОТ БЛОК ОБРАТНО -->
         <div class="nfc-prompt" id="nfcPrompt">
             <i class="fas fa-hand-pointer"></i>
-            <span id="nfcText">Tap to start playback</span>
+            <span id="nfcText">TAP HERE TO START MUSIC</span>
         </div>
 
         <div class="error-message" id="errorMessage"></div>
@@ -594,26 +592,26 @@
 
             // Инициализация
             initPlaylist();
-            loadTrack(0); // Загружаем первый трек, но не играем
+            loadTrack(0);
             audioPlayer.volume = 0.7;
             playlistCount.textContent = `${playlist.length} tracks`;
 
-            // Обновление текста NFC промпта
+            // Обновление NFC промпта
             function updateNFCPrompt() {
                 if (isPlaying) {
-                    nfcText.textContent = "Now Playing";
-                    nfcPrompt.innerHTML = '<i class="fas fa-play-circle"></i><span>Now Playing</span>';
+                    nfcText.textContent = "NOW PLAYING";
+                    nfcPrompt.innerHTML = '<i class="fas fa-play-circle"></i><span>NOW PLAYING</span>';
                     nfcPrompt.style.background = 'linear-gradient(90deg, #3a3a3a, #444)';
                     nfcPrompt.style.cursor = 'default';
                 } else {
-                    nfcText.textContent = "Tap to play";
-                    nfcPrompt.innerHTML = '<i class="fas fa-hand-pointer"></i><span>Tap to play</span>';
-                    nfcPrompt.style.background = 'linear-gradient(90deg, #4a4a4a, #555)';
+                    nfcText.textContent = "TAP HERE TO START MUSIC";
+                    nfcPrompt.innerHTML = '<i class="fas fa-hand-pointer"></i><span>TAP HERE TO START MUSIC</span>';
+                    nfcPrompt.style.background = 'linear-gradient(90deg, #666, #777)';
                     nfcPrompt.style.cursor = 'pointer';
                 }
             }
 
-            // Показать/скрыть ошибку
+            // Показать ошибку
             function showError(message) {
                 errorMessage.textContent = message;
                 errorMessage.style.display = 'block';
@@ -643,7 +641,14 @@
                         <div class="playlist-duration">${track.duration}</div>
                     `;
                     
-                    item.addEventListener('click', () => loadTrack(index));
+                    item.addEventListener('click', () => {
+                        loadTrack(index);
+                        // Если уже играет, продолжаем воспроизведение
+                        if (isPlaying) {
+                            setTimeout(() => playTrack(), 100);
+                        }
+                    });
+                    
                     playlistItems.appendChild(item);
                 });
             }
@@ -656,9 +661,10 @@
                 currentTrackIndex = index;
                 const track = playlist[currentTrackIndex];
                 
-                // Останавливаем текущее воспроизведение
-                audioPlayer.pause();
-                isPlaying = false;
+                // Останавливаем если играет
+                if (isPlaying) {
+                    audioPlayer.pause();
+                }
                 
                 // Устанавливаем новый трек
                 audioPlayer.src = track.src;
@@ -689,14 +695,14 @@
                         updateNFCPrompt();
                         console.log('Playback started');
                     }).catch(error => {
-                        showError("Tap the 'Tap to play' button above to start playback");
+                        showError("Tap the 'TAP HERE TO START MUSIC' button above");
                         isPlaying = false;
                         updatePlayPauseButton();
                     });
                 }
             }
 
-            // Остановка воспроизведения
+            // Пауза
             function pauseTrack() {
                 audioPlayer.pause();
                 isPlaying = false;
@@ -704,7 +710,7 @@
                 updateNFCPrompt();
             }
 
-            // Обновление кнопки воспроизведения
+            // Обновление кнопки Play/Pause
             function updatePlayPauseButton() {
                 const icon = playPauseBtn.querySelector('i');
                 icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
@@ -713,6 +719,7 @@
 
             // Форматирование времени
             function formatTime(seconds) {
+                if (isNaN(seconds)) return "0:00";
                 const mins = Math.floor(seconds / 60);
                 const secs = Math.floor(seconds % 60);
                 return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
@@ -726,7 +733,7 @@
                 
                 const { currentTime, duration } = audioPlayer;
                 
-                if (duration) {
+                if (duration && !isNaN(duration)) {
                     const progressPercent = (currentTime / duration) * 100;
                     progress.style.width = `${progressPercent}%`;
                     currentTimeEl.textContent = formatTime(currentTime);
@@ -734,7 +741,7 @@
                 }
             }
 
-            // Обработчики событий
+            // Обработчики кнопок управления
             playPauseBtn.addEventListener('click', () => {
                 if (isPlaying) {
                     pauseTrack();
@@ -767,7 +774,7 @@
                 updateNFCPrompt();
             });
 
-            // NFC промпт - основной способ запуска
+            // NFC промпт - основной запуск
             nfcPrompt.addEventListener('click', function() {
                 if (!isPlaying) {
                     playTrack();
@@ -775,14 +782,11 @@
                 }
             });
 
-            // Также можно тапнуть по треку для запуска
+            // Также можно тапнуть по любому треку для запуска
             document.addEventListener('click', function initAudio(e) {
-                if (!hasUserInteracted && !isPlaying) {
-                    // Первый клик в любом месте запускает воспроизведение
-                    if (audioPlayer.src) {
-                        playTrack();
-                        hasUserInteracted = true;
-                    }
+                if (!hasUserInteracted && !isPlaying && audioPlayer.src) {
+                    playTrack();
+                    hasUserInteracted = true;
                 }
             }, { once: true });
 
@@ -792,7 +796,7 @@
                 const clickX = e.offsetX;
                 const duration = audioPlayer.duration;
                 
-                if (duration) {
+                if (duration && !isNaN(duration)) {
                     audioPlayer.currentTime = (clickX / width) * duration;
                 }
             });
@@ -805,6 +809,7 @@
             // События аудио
             audioPlayer.addEventListener('timeupdate', updateProgress);
             audioPlayer.addEventListener('loadedmetadata', updateProgress);
+            
             audioPlayer.addEventListener('ended', () => {
                 const newIndex = (currentTrackIndex + 1) % playlist.length;
                 loadTrack(newIndex);
@@ -814,7 +819,8 @@
             });
             
             audioPlayer.addEventListener('error', (e) => {
-                showError(`Cannot play: ${playlist[currentTrackIndex].title}. File may be missing.`);
+                const track = playlist[currentTrackIndex];
+                showError(`Cannot play: ${track.title}. Tap a different track.`);
                 console.error('Audio error:', audioPlayer.error);
             });
 
@@ -822,7 +828,7 @@
             updateNFCPrompt();
             updatePlayPauseButton();
 
-            console.log("LOFT AUDIO Player initialized - Tap the 'Tap to play' button to start");
+            console.log("LOFT AUDIO Player ready - Tap the big button to start");
         });
     </script>
 </body>
