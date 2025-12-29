@@ -81,33 +81,46 @@
             margin-bottom: 20px;
         }
 
-        .nfc-prompt {
-            background: linear-gradient(90deg, #333, #3a3a3a);
-            color: #ffffff;
-            padding: 18px 20px;
-            text-align: center;
-            font-weight: 400;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+       .nfc-prompt {
+    background: linear-gradient(90deg, #4a4a4a, #555);
+    color: #ffffff;
+    padding: 20px;
+    text-align: center;
+    font-weight: 500;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
 
-        .nfc-prompt:hover {
-            background: linear-gradient(90deg, #3a3a3a, #444);
-        }
+.nfc-prompt:hover {
+    background: linear-gradient(90deg, #555, #666);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
 
-        .nfc-prompt i {
-            font-size: 1.1rem;
-            opacity: 0.8;
-        }
+.nfc-prompt:active {
+    transform: translateY(0);
+}
+
+.nfc-prompt i {
+    font-size: 1.2rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0.7; transform: scale(1); }
+}
 
         .player {
             padding: 32px 28px;
@@ -488,10 +501,7 @@
             <div class="subtitle">Concrete Player</div>
         </div>
 
-        <div class="nfc-prompt" id="nfcPrompt">
-            <i class="fas fa-wave-square"></i>
-            <span>Tap NFC to play</span>
-        </div>
+      
 
         <div class="error-message" id="errorMessage"></div>
 
