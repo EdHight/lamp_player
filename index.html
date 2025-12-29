@@ -1,1 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music | Concrete lamp player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Ваши стили остаются без изменений */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #2c3e50, #4a6572); color: #ecf0f1; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { width: 100%; max-width: 500px; background-color: #5d6d7e; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); border: 1px solid #7f8c8d; position: relative; }
+        .concrete-texture { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://www.transparenttextures.com/patterns/concrete-wall.png'); opacity: 0.3; pointer-events: none; z-index: 0; }
+        .header { background-color: #34495e; padding: 25px 20px; text-align: center; border-bottom: 3px solid #7f8c8d; position: relative; z-index: 1; }
+        .header h1 { font-size: 1.8rem; margin-bottom: 10px; color: #f39c12; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+        .nfc-prompt { background-color: #1abc9c; color: #2c3e50; padding: 12px; text-align: center; font-weight: bold; border-bottom: 2px solid #16a085; animation: pulse 2s infinite; position: relative; z-index: 1; }
+        @keyframes pulse { 0% { opacity: 0.9; } 50% { opacity: 1; } 100% { opacity: 0.9; } }
+        .player { padding: 30px 25px; position: relative; z-index: 1; }
+        .track-info { text-align: center; margin-bottom: 25px; background-color: rgba(52, 73, 94, 0.7); padding: 15px; border-radius: 12px; border-left: 4px solid #f39c12; }
+        .track-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 5px; color: #f1c40f; }
+        .track-artist { font-size: 1rem; opacity: 0.8; }
+        .progress-area { margin-bottom: 30px; }
+        .progress-bar { height: 6px; width: 100%; background-color: #7f8c8d; border-radius: 10px; margin-bottom: 10px; cursor: pointer; overflow: hidden; }
+        .progress { height: 100%; width: 0%; background-color: #f39c12; border-radius: 10px; transition: width 0.1s linear; }
+        .timer { display: flex; justify-content: space-between; font-size: 0.9rem; color: #bdc3c7; }
+        .controls { display: flex; justify-content: center; align-items: center; gap: 25px; margin-bottom: 30px; }
+        .control-btn { background-color: #34495e; border: none; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #ecf0f1; font-size: 1.5rem; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); }
+        .control-btn:hover { background-color: #f39c12; transform: scale(1.05); }
+        .control-btn:active { transform: scale(0.98); }
+        .play-pause { width: 70px; height: 70px; font-size: 1.8rem; background-color: #f39c12; color: #2c3e50; }
+        .playlist { background-color: rgba(52, 73, 94, 0.7); border-radius: 12px; padding: 15px; max-height: 200px; overflow-y: auto; }
+        .playlist h3 { margin-bottom: 15px; color: #f39c12; text-align: center; }
+        .playlist-item { padding: 12px 15px; border-bottom: 1px solid #7f8c8d; cursor: pointer; transition: background-color 0.2s; display: flex; align-items: center; gap: 10px; }
+        .playlist-item:hover { background-color: rgba(243, 156, 18, 0.2); }
+        .playlist-item.active { background-color: rgba(243, 156, 18, 0.3); border-left: 3px solid #f39c12; font-weight: bold; }
+        .playlist-item i { color: #f39c12; }
+        .volume-control { display: flex; align-items: center; gap: 10px; margin-top: 20px; background-color: rgba(52, 73, 94, 0.7); padding: 10px 15px; border-radius: 12px; }
+        .volume-control i { color: #f39c12; }
+        #volume { flex-grow: 1; -webkit-appearance: none; height: 5px; background: #7f8c8d; border-radius: 5px; outline: none; }
+        #volume::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #f39c12; border-radius: 50%; cursor: pointer; }
+        .footer { text-align: center; padding: 15px; font-size: 0.8rem; color: #95a5a6; border-top: 1px solid #7f8c8d; position: relative; z-index: 1; }
+        .playlist::-webkit-scrollbar { width: 8px; }
+        .playlist::-webkit-scrollbar-track { background: #34495e; border-radius: 4px; }
+        .playlist::-webkit-scrollbar-thumb { background: #f39c12; border-radius: 4px; }
+        @media (max-width: 600px) {
+            .container { border-radius: 15px; }
+            .controls { gap: 15px; }
+            .control-btn { width: 50px; height: 50px; font-size: 1.2rem; }
+            .play-pause { width: 60px; height: 60px; font-size: 1.5rem; }
+        }
+        .error-message { background-color: #e74c3c; color: white; padding: 10px; border-radius: 5px; margin-top: 10px; text-align: center; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="concrete-texture"></div>
+        
+        <div class="header">
+            <h1><i class="fas fa-volume-up"></i> Concrete Player</h1>
+            <p>Музыка для бетонного светильника</p>
+        </div>
 
+        <div class="nfc-prompt" id="nfcPrompt">
+            <i class="fas fa-mobile-alt"></i> Нажми, чтобы слушать музыку
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="player">
+            <div class="track-info">
+                <div class="track-title" id="trackTitle">Загрузка...</div>
+                <div class="track-artist" id="trackArtist">Плеер активирован</div>
+            </div>
+
+            <div class="progress-area">
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress" id="progress"></div>
+                </div>
+                <div class="timer">
+                    <span id="currentTime">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn" id="prevBtn" title="Предыдущий трек">
+                    <i class="fas fa-step-backward"></i>
+                </button>
+                <button class="control-btn play-pause" id="playPauseBtn" title="Воспроизвести/Пауза">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="control-btn" id="nextBtn" title="Следующий трек">
+                    <i class="fas fa-step-forward"></i>
+                </button>
+                <button class="control-btn" id="stopBtn" title="Стоп">
+                    <i class="fas fa-stop"></i>
+                </button>
+            </div>
+
+            <div class="volume-control">
+                <i class="fas fa-volume-down"></i>
+                <input type="range" id="volume" min="0" max="1" step="0.01" value="0.7">
+                <i class="fas fa-volume-up"></i>
+            </div>
+
+            <div class="playlist">
+                <h3><i class="fas fa-list"></i> Плейлист</h3>
+                <div id="playlistItems"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Касание NFC метки | Concrete lamp | <i class="fas fa-music"></i>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Элементы
+            const audioPlayer = new Audio();
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const trackTitle = document.getElementById('trackTitle');
+            const trackArtist = document.getElementById('trackArtist');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Тестовый плейлист - сначала используйте этот для проверки
+            const playlist = [
+                {
+                    title: "Тестовый трек",
+                    artist: "Для проверки плеера",
+                    src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+                },
+                {
+                    title: "Spiegel im Spiegel",
+                    artist: "Arvo Pärt",
+                    src: "audio/Arvo_Pärt-Spiegel_im_Spiegel.mp3"
+                },
+                {
+                    title: "Gymnopédie No.1",
+                    artist: "Erik Satie",
+                    src: "audio/Erik_Satie-Gymnopédie_No.1.mp3"
+                }
+            ];
+            
+            // Если первый трек работает, раскомментируйте ваш полный плейлист:
+            /*
+            const playlist = [
+                {
+                    title: "Spiegel im Spiegel",
+                    artist: "Arvo Pärt",
+                    src: "audio/Arvo_Pärt-Spiegel_im_Spiegel.mp3"
+                },
+                {
+                    title: "Gymnopédie No.1",
+                    artist: "Erik Satie",
+                    src: "audio/Erik_Satie-Gymnopédie_No.1.mp3"
+                },
+                {
+                    title: "Nuvole Bianche",
+                    artist: "Fabio Angelini",
+                    src: "audio/Fabio_Angelini-Nuvole_Bianche.mp3"
+                },
+                {
+                    title: "Ma Defanie",
+                    artist: "Saraabb",
+                    src: "audio/Saraabb-Ma_Defanie.mp3"
+                }
+            ];
+            */
+
+            let currentTrackIndex = 0;
+            let isPlaying = false;
+
+            // Показать ошибку
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                console.error(message);
+            }
+
+            // Скрыть ошибку
+            function hideError() {
+                errorMessage.style.display = 'none';
+            }
+
+            // Инициализация плейлиста
+            function initPlaylist() {
+                const playlistItems = document.getElementById('playlistItems');
+                playlistItems.innerHTML = '';
+                
+                playlist.forEach((track, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'playlist-item';
+                    if (index === currentTrackIndex) item.classList.add('active');
+                    
+                    item.innerHTML = `
+                        <i class="fas fa-music"></i>
+                        <div>
+                            <div>${track.title}</div>
+                            <div style="font-size: 0.8rem; opacity: 0.7;">${track.artist}</div>
+                        </div>
+                    `;
+                    
+                    item.addEventListener('click', () => playTrack(index));
+                    playlistItems.appendChild(item);
+                });
+            }
+
+            // Воспроизведение трека
+            function playTrack(index) {
+                if (index < 0 || index >= playlist.length) return;
+                
+                hideError();
+                currentTrackIndex = index;
+                const track = playlist[currentTrackIndex];
+                
+                // Останавливаем текущее воспроизведение
+                audioPlayer.pause();
+                
+                // Устанавливаем новый трек
+                audioPlayer.src = track.src;
+                trackTitle.textContent = track.title;
+                trackArtist.textContent = track.artist;
+                
+                // Обновляем активный элемент в плейлисте
+                document.querySelectorAll('.playlist-item').forEach((item, i) => {
+                    item.classList.toggle('active', i === currentTrackIndex);
+                });
+                
+                // Пытаемся воспроизвести
+                const playPromise = audioPlayer.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isPlaying = true;
+                        updatePlayPauseButton();
+                        document.getElementById('nfcPrompt').innerHTML = '<i class="fas fa-play-circle"></i> Сейчас играет';
+                        document.getElementById('nfcPrompt').style.backgroundColor = '#3498db';
+                    }).catch(error => {
+                        showError(`Не удалось воспроизвести: ${track.title}. Проверьте ссылку на файл.`);
+                        isPlaying = false;
+                        updatePlayPauseButton();
+                    });
+                }
+            }
+
+            // Обновление кнопки воспроизведения
+            function updatePlayPauseButton() {
+                const icon = playPauseBtn.querySelector('i');
+                icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+                playPauseBtn.title = isPlaying ? "Пауза" : "Воспроизвести";
+            }
+
+            // Форматирование времени
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            }
+
+            // Обновление прогресс-бара
+            function updateProgress() {
+                const progress = document.getElementById('progress');
+                const currentTimeEl = document.getElementById('currentTime');
+                const durationEl = document.getElementById('duration');
+                
+                const { currentTime, duration } = audioPlayer;
+                
+                if (duration) {
+                    const progressPercent = (currentTime / duration) * 100;
+                    progress.style.width = `${progressPercent}%`;
+                    currentTimeEl.textContent = formatTime(currentTime);
+                    durationEl.textContent = formatTime(duration);
+                }
+            }
+
+            // Обработчики событий
+            playPauseBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    audioPlayer.pause();
+                } else {
+                    audioPlayer.play().catch(e => {
+                        showError("Не удалось воспроизвести трек. Нажмите на трек в плейлисте.");
+                    });
+                }
+                isPlaying = !isPlaying;
+                updatePlayPauseButton();
+            });
+
+            prevBtn.addEventListener('click', () => {
+                currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+                playTrack(currentTrackIndex);
+            });
+
+            nextBtn.addEventListener('click', () => {
+                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                playTrack(currentTrackIndex);
+            });
+
+            stopBtn.addEventListener('click', () => {
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+                isPlaying = false;
+                updatePlayPauseButton();
+                document.getElementById('nfcPrompt').innerHTML = '<i class="fas fa-mobile-alt"></i> Нажми, чтобы слушать музыку';
+                document.getElementById('nfcPrompt').style.backgroundColor = '#1abc9c';
+            });
+
+            // Прогресс-бар
+            document.getElementById('progressBar').addEventListener('click', (e) => {
+                const width = e.target.clientWidth;
+                const clickX = e.offsetX;
+                const duration = audioPlayer.duration;
+                
+                if (duration) {
+                    audioPlayer.currentTime = (clickX / width) * duration;
+                }
+            });
+
+            // Громкость
+            document.getElementById('volume').addEventListener('input', (e) => {
+                audioPlayer.volume = e.target.value;
+            });
+
+            // События аудио
+            audioPlayer.addEventListener('timeupdate', updateProgress);
+            audioPlayer.addEventListener('loadedmetadata', updateProgress);
+            audioPlayer.addEventListener('ended', () => nextBtn.click());
+            audioPlayer.addEventListener('error', (e) => {
+                showError(`Ошибка загрузки аудио: ${audioPlayer.error ? audioPlayer.error.message : 'Неизвестная ошибка'}`);
+            });
+
+            // Инициализация
+            initPlaylist();
+            playTrack(0); // Начинаем с первого трека
+            audioPlayer.volume = 0.7;
+
+            // Клик по NFC промпту
+            document.getElementById('nfcPrompt').addEventListener('click', function() {
+                if (!isPlaying) {
+                    audioPlayer.play().then(() => {
+                        isPlaying = true;
+                        updatePlayPauseButton();
+                        this.innerHTML = '<i class="fas fa-play-circle"></i> Сейчас играет';
+                        this.style.backgroundColor = '#3498db';
+                    }).catch(e => {
+                        showError("Не удалось запустить воспроизведение. Выберите трек из плейлиста.");
+                    });
+                }
+            });
+
+            console.log("Плеер инициализирован. Для отладки откройте Console (F12).");
+        });
+    </script>
+</body>
+</html>
