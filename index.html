@@ -649,54 +649,65 @@
                 });
             }
 
-            // Воспроизведение трека
-            function playTrack(index) {
-                if (index < 0 || index >= playlist.length) return;
-                
-                hideError();
-                currentTrackIndex = index;
-                const track = playlist[currentTrackIndex];
-                
-                // Останавливаем текущее воспроизведение
-                audioPlayer.pause();
-                
-                // Устанавливаем новый трек
-                audioPlayer.src = track.src;
-                trackTitle.textContent = track.title;
-                trackArtist.textContent = track.artist;
-                
-                // Обновляем активный элемент в плейлисте
-                document.querySelectorAll('.playlist-item').forEach((item, i) => {
-                    item.classList.toggle('active', i === currentTrackIndex);
-                });
-                
-                // Пытаемся воспроизвести
-                const playPromise = audioPlayer.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        isPlaying = true;
-                        updatePlayPauseButton();
-                        updateNFCPrompt();
-                    }).catch(error => {
-                        showError(`Cannot play: ${track.title}. Check file path.`);
-                        isPlaying = false;
-                        updatePlayPauseButton();
-                    });
-                }
-            }
+     // Воспроизведение трека с улучшенной логикой
+function playTrack(index) {
+    if (index < 0 || index >= playlist.length) return;
+    
+    hideError();
+    currentTrackIndex = index;
+    const track = playlist[currentTrackIndex];
+    
+    // Останавливаем текущее воспроизведение
+    audioPlayer.pause();
+    
+    // Устанавливаем новый трек
+    audioPlayer.src = track.src;
+    trackTitle.textContent = track.title;
+    trackArtist.textContent = track.artist;
+    
+    // Обновляем активный элемент в плейлисте
+    document.querySelectorAll('.playlist-item').forEach((item, i) => {
+        item.classList.toggle('active', i === currentTrackIndex);
+    });
+    
+    // НЕ пытаемся воспроизвести сразу
+    // Вместо этого показываем кнопку
+    updateNFCPromptForGesture();
+}
 
-            // Обновление NFC промпта
-            function updateNFCPrompt() {
-                const nfcPrompt = document.getElementById('nfcPrompt');
-                if (isPlaying) {
-                    nfcPrompt.innerHTML = '<i class="fas fa-play-circle"></i><span>Now Playing</span>';
-                    nfcPrompt.style.background = 'linear-gradient(90deg, #3a3a3a, #444)';
-                } else {
-                    nfcPrompt.innerHTML = '<i class="fas fa-wave-square"></i><span>Tap NFC to play</span>';
-                    nfcPrompt.style.background = 'linear-gradient(90deg, #333, #3a3a3a)';
-                }
-            }
+// Обновление NFC промпта для жеста
+function updateNFCPromptForGesture() {
+    const nfcPrompt = document.getElementById('nfcPrompt');
+    nfcPrompt.innerHTML = '<i class="fas fa-hand-pointer"></i><span>Tap here to start playback</span>';
+    nfcPrompt.style.background = 'linear-gradient(90deg, #555, #666)';
+    nfcPrompt.style.cursor = 'pointer';
+    nfcPrompt.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.4)';
+    
+    // Вешаем обработчик на промпт
+    const startPlayback = () => {
+        audioPlayer.play().then(() => {
+            isPlaying = true;
+            updatePlayPauseButton();
+            updateNFCPromptPlaying();
+        }).catch(error => {
+            showError("Tap the play button to start");
+        });
+        
+        // Убираем обработчик после первого касания
+        nfcPrompt.removeEventListener('click', startPlayback);
+    };
+    
+    nfcPrompt.addEventListener('click', startPlayback, { once: true });
+}
+
+// Обновление NFC промпта при воспроизведении
+function updateNFCPromptPlaying() {
+    const nfcPrompt = document.getElementById('nfcPrompt');
+    nfcPrompt.innerHTML = '<i class="fas fa-play-circle"></i><span>Now Playing</span>';
+    nfcPrompt.style.background = 'linear-gradient(90deg, #3a3a3a, #444)';
+    nfcPrompt.style.cursor = 'default';
+    nfcPrompt.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+}
 
             // Обновление кнопки воспроизведения
             function updatePlayPauseButton() {
